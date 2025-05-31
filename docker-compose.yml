@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: .
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env
+    depends_on:
+      - layout-service
+      - auth-service
+      - user-service
+      - export-service
+    restart: always
+    networks:
+      - backend
+
+  layout-service:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm install express && echo \"require('express')().get('/', (req, res) => res.send('Layout OK')).listen(3002)\" > index.js && node index.js"
+    ports:
+      - "3002:3002"
+    networks:
+      - backend
+
+  auth-service:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm install express && echo \"require('express')().post('/login', (req, res) => res.send('Auth OK')).listen(3000)\" > index.js && node index.js"
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+
+  user-service:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm install express && echo \"require('express')().get('/profile', (req, res) => res.send('User OK')).listen(3001)\" > index.js && node index.js"
+    ports:
+      - "3001:3001"
+    networks:
+      - backend
+
+  export-service:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm install express && echo \"require('express')().post('/export', (req, res) => res.send('Export OK')).listen(3004)\" > index.js && node index.js"
+    ports:
+      - "3004:3004"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
