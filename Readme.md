@@ -1,157 +1,245 @@
-# API Gateway Service of ArchitechX
+# ArchitechX API Gateway
 
-![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
-![Express](https://img.shields.io/badge/Express-4.x-lightgrey)
-![License](https://img.shields.io/badge/License-MIT-blue)
+[![Node.js](https://img.shields.io/badge/Node.js-18.x-green)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-5.x-lightgrey)](https://expressjs.com/)
+[![License](https://img.shields.io/badge/License-ISC-blue)](LICENSE)
+
+---
 
 ## Table of Contents
+
+- [Overview](#overview)
 - [Features](#features)
-- [Service Routes](#service-routes)
+- [Architecture](#architecture)
+- [Directory Structure](#directory-structure)
 - [Installation](#installation)
 - [Configuration](#configuration)
-- [API Endpoints](#api-endpoints)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Monitoring](#monitoring)
+- [Running the Gateway](#running-the-gateway)
+- [Service Routing](#service-routing)
+- [Middlewares](#middlewares)
+- [Proxying & Circuit Breaker](#proxying--circuit-breaker)
+- [Rate Limiting](#rate-limiting)
+- [Health Checks](#health-checks)
+- [Logging & Monitoring](#logging--monitoring)
+- [Docker & Deployment](#docker--deployment)
 - [Contributing](#contributing)
 - [License](#license)
 
+---
+
+## Overview
+
+The **ArchitechX API Gateway** acts as a single entry point for all client requests in a microservices architecture. It handles routing, security, rate limiting, proxying, and monitoring, forwarding requests to backend services such as authentication, user, layout, and export services.
+
+---
+
 ## Features
 
-✨ **Request Routing**: Intelligent routing to backend services  
-🔒 **Security**: Helmet.js for security headers + CORS protection  
-⏱ **Rate Limiting**: Protection against brute force attacks  
-💓 **Health Checks**: System monitoring endpoints  
-📊 **Logging**: Detailed request logging with timestamps  
-⚙️ **Configurable**: Environment variable support  
-
-
-### 🛠 Tech Stack
-
-| Technology                | Purpose                                     |
-| ------------------------- | ------------------------------------------- |
-| **Node.js**               | Runtime environment                         |
-| **Express.js**            | Server framework for routing and middleware |
-| **http-proxy-middleware** | Reverse proxy implementation                |
-| **dotenv**                | Manage environment variables                |
-| **JavaScript**            | Core programming language                   |
-| **REST**                  | Communication between gateway and services  |
+- **Centralized Routing:** Directs requests to appropriate microservices based on URL path.
+- **Reverse Proxy:** Uses `http-proxy-middleware` for seamless request forwarding.
+- **Security:** Integrates `helmet` for HTTP headers and `cors` for cross-origin requests.
+- **Rate Limiting:** Prevents abuse with configurable request limits per IP.
+- **Circuit Breaker:** Protects backend services from overload and failure cascades.
+- **Health Checks:** Provides endpoints for system and service status.
+- **Logging:** Uses `morgan` for detailed request logs.
+- **Environment Configurable:** All settings via `.env` file.
+- **Dockerized:** Ready for containerized deployment.
 
 ---
 
-### Description
+## Architecture
 
-- **src/middlewares/rateLimiter.js**: Contains Express middleware to limit request rates globally or per route.
-- **src/utils/circuitBreaker.js**: Implements circuit breaker logic to protect downstream services.
-- **src/proxy-server.js**: The main API Gateway Express app that proxies requests to microservices.
-- **.env**: Holds environment variables like service URLs and port settings.
-- **Dockerfile**: Container setup for the API Gateway.
-- **docker-compose.yml**: Defines and runs multi-container Docker applications, including API Gateway and backend services.
+```
+Client
+  |
+  v
+API Gateway (This Project)
+  |         |         |         |
+  v         v         v         v
+Layout   Auth     User     Export
+Service  Service  Service  Service
+```
+
+- All client requests go through the API Gateway.
+- The gateway proxies requests to backend services based on the route prefix.
 
 ---
 
-## Service Routes
+## Directory Structure
 
-| Route       | Target Service         | Base Path  |
-|-------------|------------------------|------------|
-| `/layout`   | Layout Service         | `/api/v1`  |
-| `/auth`     | Authentication Service | `/api/v1`  |
-| `/user`     | User Service           | `/api/v1`  |
-| `/export`   | Export Service         | `/api/v1`  |
+```
+.
+├── .env
+├── .gitignore
+├── Dockerfile
+├── docker-compose.yml
+├── index.js
+├── package.json
+├── Readme.md
+└── src
+    ├── controllers/
+    ├── middlewares/
+    │   └── rateLimiter.js
+    ├── models/
+    ├── routes/
+    │   └── proxyRoutes.js
+    └── utility/
+        ├── circuitBreaker.js
+        └── httpProxy.js
+```
 
+- **index.js**: Main entry point, sets up Express app and middleware.
+- **src/routes/proxyRoutes.js**: Configures proxy routes for each microservice.
+- **src/middlewares/rateLimiter.js**: Express middleware for rate limiting.
+- **src/utility/circuitBreaker.js**: Circuit breaker logic using `opossum`.
+- **src/utility/httpProxy.js**: Helper for proxy middleware setup.
 
---- 
+---
 
 ## Installation
 
-```bash
-# Clone repository
-git clone https://github.com/your-org/api-gateway.git
-cd api-gateway
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/your-org/api-gateway.git
+   cd api-gateway
+   ```
 
-# Install dependencies
-npm install
+2. **Install dependencies:**
+   ```sh
+   npm install
+   ```
 
-# Copy environment variables
-cp .env.example .env
+3. **Copy and configure environment variables:**
+   ```sh
+   cp .env.example .env
+   # Edit .env as needed
+   ```
 
-# Start server
-npm start
+---
 
-# For development
+## Configuration
+
+All configuration is managed via the `.env` file. Example:
+
+```
+PORT=8000
+TIMEOUT=30s
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_MAX=100
+LAYOUT_SERVICE_URL=http://localhost:3002
+AUTH_SERVICE_URL=http://localhost:3000
+USER_SERVICE_URL=http://localhost:3001
+EXPORT_SERVICE_URL=http://localhost:3004
+NODE_ENV=development
+```
+
+- **PORT**: Port for the API Gateway.
+- **RATE_LIMIT_WINDOW**: Time window for rate limiting (ms).
+- **RATE_LIMIT_MAX**: Max requests per window per IP.
+- ***_SERVICE_URL**: URLs for backend services.
+
+---
+
+## Running the Gateway
+
+**Development:**
+```sh
 npm run dev
-
-```
----
-
-### Configuration
-
-#### Edit the .env file:
-
-* PORT=8000
-* TIMEOUT=30s
-* RATE_LIMIT_WINDOW=900000  # 15 minutes
-* RATE_LIMIT_MAX=100
-* LAYOUT_SERVICE=http://localhost:3002
-* AUTH_SERVICE=http://localhost:3000
-* USER_SERVICE=http://localhost:3001
-* EXPORT_SERVICE=http://localhost:3004
-* NODE_ENV=development
-
-
----
-
-### API Endpoints
-
-#### Health Checks
-
-* GET /health - Basic health status
-
-* GET /health/details - Detailed service status
-
-#### Service Access
-* All services follow the pattern:
-- /{service-name}/api/v1/{endpoint}
-
-*Example:
-- /layout/api/v1/create-layout
-
-### Dependencies
-
-```bash
-"dependencies": {
-  "express": "^4.x",
-  "http-proxy-middleware": "^2.x",
-  "helmet": "^7.x",
-  "morgan": "^1.x",
-  "express-rate-limit": "^6.x",
-  "cors": "^2.x",
-  "dotenv": "^16.x"
-}
 ```
 
-### Monitoring
-#### 📋 Logs Include:
+**Production:**
+```sh
+npm start
+```
 
-* All incoming requests
-
-* Proxy routing details
-
-* Error traces with timestamps
+The gateway will be available at `http://localhost:8000` (or your configured port).
 
 ---
 
-### Contributing
+## Service Routing
 
-* Fork the repository
+| Route Prefix | Target Service         | Example Forwarded Path      |
+|--------------|-----------------------|-----------------------------|
+| `/layout`    | Layout Service        | `/layout/api/v1/...`        |
+| `/auth`      | Authentication Service| `/auth/api/v1/...`          |
+| `/user`      | User Service          | `/user/api/v1/...`          |
+| `/export`    | Export Service        | `/export/api/v1/...`        |
 
-* Create your feature branch (git checkout -b feature/awesome-feature)
-
-* Commit your changes (git commit -am 'Add awesome feature')
-
-* Push to the branch (git push origin feature/awesome-feature)
-
-* Open a Pull Request
+- Requests to `/layout/*` are proxied to the Layout Service, etc.
+- Path rewriting strips the prefix and adds `/api/v1`.
 
 ---
 
+## Middlewares
+
+- **Helmet:** Sets secure HTTP headers.
+- **CORS:** Allows cross-origin requests from `http://localhost:5173` (configurable).
+- **Morgan:** Logs all incoming requests.
+- **Rate Limiter:** Limits requests per IP to prevent abuse.
+
+---
+
+## Proxying & Circuit Breaker
+
+- **Proxy:** Uses [`http-proxy-middleware`](https://www.npmjs.com/package/http-proxy-middleware) for forwarding.
+- **Circuit Breaker:** [`opossum`](https://www.npmjs.com/package/opossum) protects backend services. If a service fails repeatedly, the circuit opens and returns a 503 error until the service recovers.
+
+---
+
+## Rate Limiting
+
+- Configured in [`src/middlewares/rateLimiter.js`](src/middlewares/rateLimiter.js).
+- Default: 100 requests per 15 minutes per IP.
+- Customizable via `.env`.
+
+---
+
+## Health Checks
+
+- `GET /health`: Returns `{ status: 'API Gateway is running' }`.
+- Extendable for detailed health checks of downstream services.
+
+---
+
+## Logging & Monitoring
+
+- All requests are logged with method, path, status, and response time.
+- Proxy errors and circuit breaker events are logged to the console.
+
+---
+
+## Docker & Deployment
+
+**Build and run with Docker Compose:**
+```sh
+docker-compose up --build
+```
+
+- The gateway and all mock backend services will start.
+- Ports are mapped as per `docker-compose.yml`.
+
+**Dockerfile** is provided for standalone builds.
+
+---
+
+## Contributing
+
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -am 'Add new feature'`
+4. Push to your branch: `git push origin feature/your-feature`
+5. Open a Pull Request.
+
+---
+
+## License
+
+This project is licensed under the [ISC License](LICENSE).
+
+---
+
+## Contact
+
+For questions or support, please open an issue or contact the maintainer.
+
+---
