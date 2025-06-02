@@ -29,7 +29,7 @@
 
 ## Overview
 
-The **ArchitechX API Gateway** acts as a single entry point for all client requests in a microservices architecture. It handles routing, security, rate limiting, proxying, and monitoring, forwarding requests to backend services such as authentication, user, layout, and export services.
+The **ArchitechX API Gateway** acts as a single entry point for all client requests in a microservices architecture. It handles routing, security, rate limiting, proxying, and monitoring, forwarding requests to backend services such as authentication, user, layout, export, and chatbot services.
 
 ---
 
@@ -54,10 +54,10 @@ Client
   |
   v
 API Gateway (This Project)
-  |         |         |         |
-  v         v         v         v
-Layout   Auth     User     Export
-Service  Service  Service  Service
+  |         |         |         |         |
+  v         v         v         v         v
+Layout   Auth     User     Export    Chatbot
+Service  Service  Service  Service   Service
 ```
 
 - All client requests go through the API Gateway.
@@ -129,7 +129,8 @@ RATE_LIMIT_MAX=100
 LAYOUT_SERVICE_URL=http://localhost:3002
 AUTH_SERVICE_URL=http://localhost:3000
 USER_SERVICE_URL=http://localhost:3001
-EXPORT_SERVICE_URL=http://localhost:3004
+EXPORT_SERVICE_URL=http://localhost:3005
+CHATBOT_SERVICE_URL=http://localhost:3006
 NODE_ENV=development
 ```
 
@@ -164,6 +165,7 @@ The gateway will be available at `http://localhost:8000` (or your configured por
 | `/auth`      | Authentication Service| `/auth/api/v1/...`          |
 | `/user`      | User Service          | `/user/api/v1/...`          |
 | `/export`    | Export Service        | `/export/api/v1/...`        |
+| `/chatbot`   | Chatbot Service       | `/chatbot/api/v1/...`       |
 
 - Requests to `/layout/*` are proxied to the Layout Service, etc.
 - Path rewriting strips the prefix and adds `/api/v1`.
@@ -175,7 +177,7 @@ The gateway will be available at `http://localhost:8000` (or your configured por
 - **Helmet:** Sets secure HTTP headers.
 - **CORS:** Allows cross-origin requests from `http://localhost:5173` (configurable).
 - **Morgan:** Logs all incoming requests.
-- **Rate Limiter:** Limits requests per IP to prevent abuse.
+- **Rate Limiter:** Limits requests per IP to prevent abuse (currently commented out, enable as needed).
 
 ---
 
@@ -191,6 +193,7 @@ The gateway will be available at `http://localhost:8000` (or your configured por
 - Configured in [`src/middlewares/rateLimiter.js`](src/middlewares/rateLimiter.js).
 - Default: 100 requests per 15 minutes per IP.
 - Customizable via `.env`.
+- To enable, uncomment the relevant line in `index.js`.
 
 ---
 

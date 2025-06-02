@@ -32,6 +32,16 @@ function setupProxies(app) {
     },
   }));
 
+  app.use('/chatbot', createProxyMiddleware({
+    target: process.env.CHATBOT_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/chatbot': '/api/v1' },
+    onError: (err, req, res) => {
+      console.error('Chatbot Service Error:', err.message);
+      res.status(502).json({ error: 'Chatbot service unavailable' });
+    },
+  }));
+
   app.use('/export', createProxyMiddleware({
     target: process.env.EXPORT_SERVICE_URL,
     changeOrigin: true,
