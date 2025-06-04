@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
-// const rateLimiter = require('./src/middlewares/rateLimiter');
+const rateLimiter = require('./src/middlewares/rateLimiter');
 const setupProxies = require('./src/routes/proxyRoutes');
 dotenv.config();
 
@@ -17,7 +17,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(morgan('dev'));
-// app.use(rateLimiter);
+app.use(rateLimiter);
 
 // Proxy Routes
 setupProxies(app);
