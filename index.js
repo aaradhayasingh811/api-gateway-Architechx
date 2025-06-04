@@ -17,7 +17,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(morgan('dev'));
-app.use(rateLimiter);
+// app.use(rateLimiter);
 
 // Proxy Routes
 setupProxies(app);
